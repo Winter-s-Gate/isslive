@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ISS Live Panel</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #000;
+      color: #0ff;
+      font-family: 'Orbitron', sans-serif;
+      text-align: center;
+    }
+    h1 {
+      margin-top: 10px;
+      font-size: 1.5em;
+    }
+    iframe {
+      border: none;
+      margin: 10px 0;
+    }
+    .data-box {
+      margin: 10px auto;
+      padding: 10px;
+      background-color: #111;
+      border: 1px solid #0ff;
+      width: 80%;
+      max-width: 500px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🛰️ ISS Live Panel</h1>
+
+  <!-- Flux vidéo SD -->
+  <iframe width="100%" height="300" src="https://www.youtube.com/embed/86YLFOog4GM" allowfullscreen></iframe>
+
+  <!-- Carte de suivi -->
+  <iframe src="https://www.astroviewer.net/widgets/iss-position.php" width="100%" height="300"></iframe>
+
+  <!-- Données en direct -->
+  <div class="data-box">
+    <p>Altitude : <span id="altitude">...</span></p>
+    <p>Vitesse : <span id="velocity">...</span></p>
+    <p>Équipage à bord : <span id="crew">...</span></p>
+  </div>
+
+  <script>
+    // Altitude et vitesse
+    fetch("https://api.wheretheiss.at/v1/satellites/25544")
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("altitude").innerText = data.altitude.toFixed(2) + " km";
+        document.getElementById("velocity").innerText = data.velocity.toFixed(2) + " km/h";
+      });
+
+    // Équipage
+    fetch("http://api.open-notify.org/astros.json")
+      .then(res => res.json())
+      .then(data => {
+        const issCrew = data.people.filter(p => p.craft === "ISS");
+        document.getElementById("crew").innerText = issCrew.length + " astronautes";
+      });
+  </script>
+</body>
+</html>
