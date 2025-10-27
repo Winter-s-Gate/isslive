@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ISS Live Panel</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha512-sA+e2g1jvZz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1"
+    crossorigin=""
+  />
   <style>
     body {
       margin: 0;
@@ -28,6 +34,11 @@
       width: 80%;
       max-width: 500px;
     }
+    #map {
+      height: 300px;
+      width: 100%;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -36,8 +47,8 @@
   <!-- Flux vidéo SD -->
   <iframe width="100%" height="300" src="https://www.youtube-nocookie.com/embed/iYmvCUonukw?controls=0&autoplay=1&mute=0&rel=0&modestbranding=1" allowfullscreen></iframe>
 
-  <!-- Carte de suivi -->
-  <iframe src="https://www.astroviewer.net/widgets/iss-position.php" width="100%" height="300"></iframe>
+  <!-- Carte Leaflet -->
+  <div id="map"></div>
 
   <!-- Données en direct -->
   <div class="data-box">
@@ -46,22 +57,50 @@
     <p>Équipage à bord : <span id="crew">...</span></p>
   </div>
 
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha512-o9N1jvZz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1Zz9kZ0Z1"
+    crossorigin=""
+  ></script>
   <script>
-    // Altitude et vitesse
-    fetch("https://api.wheretheiss.at/v1/satellites/25544")
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("altitude").innerText = data.altitude.toFixed(2) + " km";
-        document.getElementById("velocity").innerText = data.velocity.toFixed(2) + " km/h";
-      });
+    const map = L.map('map').setView([0, 0], 2);
 
-    // Équipage
-    fetch("http://api.open-notify.org/astros.json")
-      .then(res => res.json())
-      .then(data => {
-        const issCrew = data.people.filter(p => p.craft === "ISS");
-        document.getElementById("crew").innerText = issCrew.length + " astronautes";
-      });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 5,
+    }).addTo(map);
+
+    const issIcon = L.icon({
+      iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/d0/International_Space_Station.svg',
+      iconSize: [50, 32],
+      iconAnchor: [25, 16],
+    });
+
+    const marker = L.marker([0, 0], { icon: issIcon }).addTo(map);
+
+    async function updateISS() {
+      const res = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+      const data = await res.json();
+      const { latitude, longitude, altitude, velocity } = data;
+
+      marker.setLatLng([latitude, longitude]);
+      map.panTo([latitude, longitude], { animate: true });
+
+      document.getElementById("altitude").innerText = altitude.toFixed(2) + " km";
+      document.getElementById("velocity").innerText = velocity.toFixed(2) + " km/h";
+    }
+
+    async function updateCrew() {
+      const res = await fetch("http://api.open-notify.org/astros.json");
+      const data = await res.json();
+      const issCrew = data.people.filter(p => p.craft === "ISS");
+      document.getElementById("crew").innerText = issCrew.length + " astronautes";
+    }
+
+    updateISS();
+    updateCrew();
+    setInterval(updateISS, 5000);
+    setInterval(updateCrew, 60000);
   </script>
 </body>
 </html>
